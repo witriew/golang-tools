@@ -28,6 +28,7 @@ import (
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/pointer"
 	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/refactor/importgraph"
 )
 
 type printfFunc func(pos interface{}, format string, args ...interface{})
@@ -74,6 +75,9 @@ type Query struct {
 	Scope      []string  // main packages in (*loader.Config).FromArgs syntax
 	PTALog     io.Writer // (optional) pointer-analysis log file
 	Reflection bool      // model reflection soundly (currently slow).
+
+	// cache options
+	Graph importgraph.Graph
 
 	// result-printing function, safe for concurrent use
 	Output func(*token.FileSet, QueryResult)

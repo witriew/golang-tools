@@ -11,6 +11,7 @@ package main // import "golang.org/x/tools/cmd/guru"
 
 import (
 	"bufio"
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"go/build"
@@ -25,16 +26,19 @@ import (
 	"sync"
 
 	"golang.org/x/tools/go/buildutil"
+	"golang.org/x/tools/refactor/importgraph"
 )
 
 // flags
 var (
-	modifiedFlag   = flag.Bool("modified", false, "read archive of modified files from standard input")
-	scopeFlag      = flag.String("scope", "", "comma-separated list of `packages` the analysis should be limited to")
-	ptalogFlag     = flag.String("ptalog", "", "write points-to analysis log to `file`")
-	jsonFlag       = flag.Bool("json", false, "emit output in JSON format")
-	reflectFlag    = flag.Bool("reflect", false, "analyze reflection soundly (slow)")
-	cpuprofileFlag = flag.String("cpuprofile", "", "write CPU profile to `file`")
+	modifiedFlag    = flag.Bool("modified", false, "read archive of modified files from standard input")
+	scopeFlag       = flag.String("scope", "", "comma-separated list of `packages` the analysis should be limited to")
+	ptalogFlag      = flag.String("ptalog", "", "write points-to analysis log to `file`")
+	jsonFlag        = flag.Bool("json", false, "emit output in JSON format")
+	reflectFlag     = flag.Bool("reflect", false, "analyze reflection soundly (slow)")
+	cpuprofileFlag  = flag.String("cpuprofile", "", "write CPU profile to `file`")
+	graphFlag       = flag.String("graph", "", "location of serialized import graph")
+	loaderCacheFlag = flag.String("loaderCache", "", "directory of the loader cache")
 )
 
 func init() {
@@ -208,6 +212,20 @@ func main() {
 		scope = strings.Split(*scopeFlag, ",")
 	}
 
+	var graph importgraph.Graph
+	if *graphFlag != "" {
+		f, err := os.Open(*graphFlag)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		d := gob.NewDecoder(f)
+		err = d.Decode(&graph)
+		if err != nil {
+			log.Fatal("graph decode failed:", err, *graphFlag)
+		}
+	}
+
 	// Ask the guru.
 	query := Query{
 		Pos:        posn,
@@ -216,6 +234,7 @@ func main() {
 		PTALog:     ptalog,
 		Reflection: *reflectFlag,
 		Output:     output,
+		Graph:      graph,
 	}
 
 	if err := Run(mode, &query); err != nil {

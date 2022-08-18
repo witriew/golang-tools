@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -128,7 +129,9 @@ func classify(obj types.Object) (global, pkglevel bool) {
 func packageReferrers(q *Query, path string) error {
 	// Scan the workspace and build the import graph.
 	// Ignore broken packages.
+	//start := time.Now()
 	_, rev, _ := importgraph.Build(q.Build)
+	//fmt.Printf("packageReferrers:importgraph.Build took %s\n", time.Since(start))
 
 	// Find the set of packages that directly import the query package.
 	// Only those packages need typechecking of function bodies.
@@ -229,7 +232,9 @@ func outputUses(q *Query, fset *token.FileSet, refs []*ast.Ident, pkg *types.Pac
 func globalReferrers(q *Query, qpkg, defpkg string, objposn token.Position) error {
 	// Scan the workspace and build the import graph.
 	// Ignore broken packages.
+	//start := time.Now()
 	_, rev, _ := importgraph.Build(q.Build)
+	//fmt.Printf("globalReferrers:importgraph.Build took %s\n", time.Since(start))
 
 	// Find the set of packages that depend on defpkg.
 	// Only function bodies in those packages need type-checking.
@@ -352,7 +357,24 @@ func globalReferrersPkgLevel(q *Query, obj types.Object, fset *token.FileSet) er
 
 	// Scan the workspace and build the import graph.
 	// Ignore broken packages.
-	_, rev, _ := importgraph.Build(q.Build)
+	//start := time.Now()
+	rev := q.Graph
+	if rev == nil {
+		_, rev, _ = importgraph.Build(q.Build)
+		// serialize it
+
+		f, err := os.Create("/home/user/tmp/graph.gob")
+		if err != nil {
+			return err
+		}
+
+		enc := gob.NewEncoder(f)
+		err = enc.Encode(rev)
+		if err != nil {
+			return err
+		}
+	}
+	//fmt.Printf("globalReferrersPkgLevel:importgraph.Build took %s\n", time.Since(start))
 
 	// Find the set of packages that directly import defpkg.
 	defpkg := obj.Pkg().Path()

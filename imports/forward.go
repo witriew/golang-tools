@@ -23,6 +23,8 @@ type Options struct {
 	TabIndent bool // Use tabs for indent (true if nil *Options provided)
 	TabWidth  int  // Tab width (8 if nil *Options provided)
 
+	ReSort bool // Completely re-sort all imports, regardless of existing groupings
+
 	FormatOnly bool // Disable the insertion and deletion of imports
 }
 
@@ -33,6 +35,10 @@ var Debug = false
 // set, instructs Process to sort the import paths with the given prefixes
 // into another group after 3rd-party packages.
 var LocalPrefix string
+
+// ThirdPartyPrefix specifies other prefixes that should be grouped into 3rd-party
+// packages.
+var ThirdPartyPrefix string
 
 // Process formats and adjusts imports for the provided file.
 // If opt is nil the defaults are used, and if src is nil the source
@@ -56,13 +62,15 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 		Env: &intimp.ProcessEnv{
 			GocmdRunner: &gocommand.Runner{},
 		},
-		LocalPrefix: LocalPrefix,
-		AllErrors:   opt.AllErrors,
-		Comments:    opt.Comments,
-		FormatOnly:  opt.FormatOnly,
-		Fragment:    opt.Fragment,
-		TabIndent:   opt.TabIndent,
-		TabWidth:    opt.TabWidth,
+		LocalPrefix:      LocalPrefix,
+		ThirdPartyPrefix: ThirdPartyPrefix,
+		AllErrors:        opt.AllErrors,
+		Comments:         opt.Comments,
+		FormatOnly:       opt.FormatOnly,
+		Fragment:         opt.Fragment,
+		ReSort:           opt.ReSort,
+		TabIndent:        opt.TabIndent,
+		TabWidth:         opt.TabWidth,
 	}
 	if Debug {
 		intopt.Env.Logf = log.Printf

@@ -34,12 +34,18 @@ type Options struct {
 	// into another group after 3rd-party packages.
 	LocalPrefix string
 
+	// ThirdPartyPrefix specifies other prefixes that should be grouped into 3rd-party
+	// packages.
+	ThirdPartyPrefix string
+
 	Fragment  bool // Accept fragment of a source file (no package statement)
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
 
 	Comments  bool // Print comments (true if nil *Options provided)
 	TabIndent bool // Use tabs for indent (true if nil *Options provided)
 	TabWidth  int  // Tab width (8 if nil *Options provided)
+
+	ReSort bool // Completely re-sort all imports, regardless of existing groupings
 
 	FormatOnly bool // Disable the insertion and deletion of imports
 }
@@ -111,7 +117,7 @@ func ApplyFixes(fixes []*ImportFix, filename string, src []byte, opt *Options, e
 // formatted file, and returns the postpocessed result.
 func formatFile(fset *token.FileSet, file *ast.File, src []byte, adjust func(orig []byte, src []byte) []byte, opt *Options) ([]byte, error) {
 	mergeImports(file)
-	sortImports(opt.LocalPrefix, fset.File(file.Pos()), file)
+	sortImports(opt.LocalPrefix, opt.ThirdPartyPrefix, opt.ReSort, fset.File(file.Pos()), file)
 	var spacesBefore []string // import paths we need spaces before
 	for _, impSection := range astutil.Imports(fset, file) {
 		// Within each block of contiguous imports, see if any
@@ -121,7 +127,7 @@ func formatFile(fset *token.FileSet, file *ast.File, src []byte, adjust func(ori
 		lastGroup := -1
 		for _, importSpec := range impSection {
 			importPath, _ := strconv.Unquote(importSpec.Path.Value)
-			groupNum := importGroup(opt.LocalPrefix, importPath)
+			groupNum := importGroup(opt.LocalPrefix, opt.ThirdPartyPrefix, importPath)
 			if groupNum != lastGroup && lastGroup != -1 {
 				spacesBefore = append(spacesBefore, importPath)
 			}

@@ -55,6 +55,17 @@ var importToGroup = []func(env *ProcessEnv, importPath string) (num int, ok bool
 		}
 		return
 	},
+	func(env *ProcessEnv, importPath string) (num int, ok bool) {
+		if env.ThirdPartyPrefix == "" {
+			return
+		}
+		for _, p := range strings.Split(env.ThirdPartyPrefix, ",") {
+			if strings.HasPrefix(importPath, p) || strings.TrimSuffix(p, "/") == importPath {
+				return 1, true
+			}
+		}
+		return
+	},
 }
 
 func importGroup(env *ProcessEnv, importPath string) int {
@@ -745,7 +756,8 @@ func getPackageExports(ctx context.Context, wrapped func(PackageExport), searchP
 // ProcessEnv contains environment variables and settings that affect the use of
 // the go command, the go/build package, etc.
 type ProcessEnv struct {
-	LocalPrefix string
+	LocalPrefix      string
+	ThirdPartyPrefix string
 
 	GocmdRunner *gocommand.Runner
 

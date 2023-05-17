@@ -41,6 +41,8 @@ type Options struct {
 	TabIndent bool // Use tabs for indent (true if nil *Options provided)
 	TabWidth  int  // Tab width (8 if nil *Options provided)
 
+	ReSort bool // Completely re-sort all imports, regardless of existing groupings
+
 	FormatOnly bool // Disable the insertion and deletion of imports
 }
 
@@ -172,7 +174,7 @@ func initialize(filename string, src []byte, opt *Options) ([]byte, *Options, er
 
 func formatFile(fileSet *token.FileSet, file *ast.File, src []byte, adjust func(orig []byte, src []byte) []byte, opt *Options) ([]byte, error) {
 	mergeImports(opt.Env, fileSet, file)
-	sortImports(opt.Env, fileSet, file)
+	sortImports(opt.Env, opt.ReSort, fileSet, file)
 	imps := astutil.Imports(fileSet, file)
 	var spacesBefore []string // import paths we need spaces before
 	for _, impSection := range imps {
